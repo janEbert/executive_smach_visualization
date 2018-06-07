@@ -34,6 +34,7 @@ import rospy
 import rospkg
 
 from smach_msgs.msg import SmachContainerStatus,SmachContainerInitialStatusCmd,SmachContainerStructure
+from std_msgs.msg import String
 
 import sys
 import os
@@ -54,6 +55,8 @@ import wx
 import wx.richtext
 
 import textwrap
+
+TRANSITION_TOPIC = '/smach/transition'
 
 ## this import system (or ros-released) xdot
 # import xdot
@@ -585,10 +588,16 @@ class SmachViewerFrame(wx.Frame):
         self.ud_gs.Add(self.ud_txt,1,wx.EXPAND | borders, border)
         
         # Add initial state button
-        self.is_button = wx.Button(self.ud_win,-1,"Set as Initial State")
-        self.is_button.Bind(wx.EVT_BUTTON, self.on_set_initial_state)
-        self.is_button.Disable()
-        self.ud_gs.Add(self.is_button,0,wx.EXPAND | wx.BOTTOM | borders, border)
+        # self.is_button = wx.Button(self.ud_win,-1,"Set as Initial State")
+        # self.is_button.Bind(wx.EVT_BUTTON, self.on_set_initial_state)
+        # self.is_button.Disable()
+        # self.ud_gs.Add(self.is_button,0,wx.EXPAND | wx.BOTTOM | borders, border)
+
+        # Add trigger transition button
+        self.tt_button = wx.Button(self.ud_win, -1, "Trigger Transition")
+        self.tt_button.Bind(wx.EVT_BUTTON, self.on_trigger_transition)
+        self.tt_button.Disable()
+        self.ud_gs.Add(self.tt_button, 0, wx.EXPAND | wx.BOTTOM | borders, border)
 
         self.ud_win.SetSizer(self.ud_gs)
 
@@ -659,6 +668,18 @@ class SmachViewerFrame(wx.Frame):
 
         server_name = self._containers[parent_path]._server_name
         self._client.set_initial_state(server_name,parent_path,[state],timeout = rospy.Duration(60.0))
+
+    def on_trigger_transition(self, event):
+        """Event: Change the current state of the server."""
+        state_path = self._selected_paths[0]
+        parent_path = get_parent_path(state_path)
+
+        server_name = self._containers[parent_path]._server_name
+        transition_pub = rospy.Publisher(server_name + TRANSITION_TOPIC,
+                                   String, queue_size=1)
+        transition_msg = String()
+        transition_msg.data = state_path
+        transition_pub.publish(transition_msg)
 
     def set_path(self, event):
         """Event: Change the viewable path and update the graph."""
@@ -743,7 +764,8 @@ class SmachViewerFrame(wx.Frame):
 
             if parent_path in self._containers:
                 # Enable the initial state button for the selection
-                self.is_button.Enable()
+                #self.is_button.Enable()
+                self.tt_button.Enable()
 
                 # Get the container
                 container = self._containers[parent_path]
@@ -771,7 +793,8 @@ class SmachViewerFrame(wx.Frame):
                     self.ud_txt.SetSelection(sel[0],sel[1])
             else:
                 # Disable the initial state button for this selection
-                self.is_button.Disable()
+                #self.is_button.Disable()
+                self.tt_button.Disable()
 
     def _structure_msg_update(self, msg, server_name):
         """Update the structure of the SMACH plan (re-generate the dotcode)."""
@@ -906,6 +929,7 @@ class SmachViewerFrame(wx.Frame):
                                 self._containers,
                                 self._show_all_transitions,
                                 self._label_wrapper)
+
                     if len(containers_to_update) == 0:
                         dotstr += '"__empty__" [label="Path not available.", shape="plaintext"]'
 
