@@ -57,6 +57,7 @@ import wx.richtext
 import textwrap
 
 TRANSITION_TOPIC = '/smach/transition'
+EVENT_TOPIC = '/smach/event'
 
 ## this import system (or ros-released) xdot
 # import xdot
@@ -291,10 +292,11 @@ class ContainerNode():
                     dotstr += '"%s" %s;\n' % (child_path, attr_string(child_attrs))
 
             # Iterate over edges
-            internal_edges = zip(
-                    self._internal_outcomes,
-                    self._outcomes_from,
-                    self._outcomes_to)
+            internal_edges = []
+            # internal_edges = zip(
+            #         self._internal_outcomes,
+            #         self._outcomes_from,
+            #         self._outcomes_to)
 
             # Add edge from container label to initial state
             internal_edges += [('','__proxy__',initial_child) for initial_child in self._initial_states]
@@ -597,6 +599,15 @@ class SmachViewerFrame(wx.Frame):
         self.tt_button.Disable()
         self.ud_gs.Add(self.tt_button, 0, wx.EXPAND | wx.BOTTOM | borders, border)
 
+
+        self.event_combo = wx.ComboBox(self.ud_win, -1, style=wx.CB_DROPDOWN)
+        self.ud_gs.Add(self.event_combo, 0, wx.EXPAND | wx.BOTTOM | borders, border)
+
+        # Add trigger event button
+        self.event_button = wx.Button(self.ud_win, -1, "Trigger Event")
+        self.event_button.Bind(wx.EVT_BUTTON, self.on_trigger_event)
+        self.ud_gs.Add(self.event_button, 0, wx.EXPAND | wx.BOTTOM | borders, border)
+
         self.ud_win.SetSizer(self.ud_gs)
 
 
@@ -678,6 +689,15 @@ class SmachViewerFrame(wx.Frame):
         transition_msg = String()
         transition_msg.data = state_path
         transition_pub.publish(transition_msg)
+
+    def on_trigger_event(self, event):
+        """Event: Dispatch an event in the hsm."""
+        server_name = self._containers[self._path]._server_name
+        event_pub = rospy.Publisher(server_name + EVENT_TOPIC,
+                                   String, queue_size=1)
+        event_msg = String(self.event_combo.GetValue())
+        event_pub.publish(event_msg)
+
 
     def set_path(self, event):
         """Event: Change the viewable path and update the graph."""
@@ -890,6 +910,16 @@ class SmachViewerFrame(wx.Frame):
                 # Wait for the update condition to be triggered
                 self._update_cond.wait()
 
+                # update the event combo box
+                events = []
+                for c in self._containers.values():
+                    for o in c._internal_outcomes:
+                        events.append(o)
+                if not set(events) == set(self.event_combo.GetItems()):
+                    self.event_combo.Clear()
+                    for e in events:
+                        self.event_combo.Append(e)
+
                 # Get the containers to update
                 containers_to_update = {}
                 if self._path in self._containers:
@@ -1022,6 +1052,8 @@ class SmachViewerFrame(wx.Frame):
                         SmachContainerStatus,
                         callback = self._status_msg_update,
                         queue_size=50)
+
+
 
             # This doesn't need to happen very often
             rospy.sleep(1.0)
