@@ -755,8 +755,11 @@ class SmachViewerFrame(wx.Frame):
             return
 
         self.statusbar.SetStatusText(item.url)
+        if event.LeftDClick():
+            self.on_trigger_transition(event)
+
         # Left button-up
-        if event.ButtonUp(wx.MOUSE_BTN_LEFT):
+        if event.LeftDown():
             # Store this item's url as the selected path
             self._selected_paths = [item.url]
             # Update the selection dropdown
