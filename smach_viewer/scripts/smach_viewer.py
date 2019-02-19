@@ -996,6 +996,7 @@ class SmachViewerFrame(wx.Frame):
                 self._tree_nodes = {}
                 for path,tc in self._top_containers.iteritems():
                     self.add_to_tree(path, None)
+                self.tree.ExpandAll()
 
     def add_to_tree(self, path, parent):
         """Add a path to the tree view."""
