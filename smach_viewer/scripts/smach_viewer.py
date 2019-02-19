@@ -67,8 +67,8 @@ def import_non_local(name, custom_name=None):
 
     return module
 
-smach_viewer = import_non_local('smach_viewer')
-from smach_viewer import xdot
+#smach_viewer = import_non_local('smach_viewer')
+#from smach_viewer import xdot
 ##
 import smach
 import smach_ros
@@ -548,10 +548,10 @@ class SmachViewerFrame(wx.Frame):
         self.Bind(wx.EVT_TOOL, self.SaveDotGraph, id=wx.ID_SAVE)
 
         # Create dot graph widget
-        self.widget = xdot.wxxdot.WxDotWindow(graph_view, -1)
+        #self.widget = xdot.wxxdot.WxDotWindow(graph_view, -1)
 
         gv_vbox.Add(toolbar, 0, wx.EXPAND)
-        gv_vbox.Add(self.widget, 1, wx.EXPAND)
+        #gv_vbox.Add(self.widget, 1, wx.EXPAND)
 
         # Create tree view widget
         self.tree = wx.TreeCtrl(nb,-1,style=wx.TR_HAS_BUTTONS)
@@ -559,6 +559,7 @@ class SmachViewerFrame(wx.Frame):
 
         nb.AddPage(graph_view,"Graph View")
         nb.AddPage(self.tree,"Tree View")
+        nb.SetSelection(1)
 
 
         # Create userdata widget
@@ -629,7 +630,7 @@ class SmachViewerFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE,self.OnQuit)
 
         # Register mouse event callback
-        self.widget.register_select_callback(self.select_cb)
+        #self.widget.register_select_callback(self.select_cb)
         self._path = '/'
         self._needs_zoom = True
         self._structure_changed = True
@@ -963,20 +964,21 @@ class SmachViewerFrame(wx.Frame):
                     self._structure_changed = False
 
                 # Update the styles for the graph if there are any updates
-                for path,tc in containers_to_update.iteritems():
-                    tc.set_styles(
-                            self._selected_paths,
-                            0,self._max_depth,
-                            self.widget.items_by_url,
-                            self.widget.subgraph_shapes,
-                            self._containers)
+                # for path,tc in containers_to_update.iteritems():
+                #     tc.set_styles(
+                #             self._selected_paths,
+                #             0,self._max_depth,
+                #             self.widget.items_by_url,
+                #             self.widget.subgraph_shapes,
+                #             self._containers)
 
                 # Redraw
-                self.widget.Refresh()
+                #self.widget.Refresh()
 
     def set_dotcode(self, dotcode, zoom=True):
         """Set the xdot view's dotcode and refresh the display."""
         # Set the new dotcode
+        return
         if self.widget.set_dotcode(dotcode, None):
             self.SetTitle('Smach Viewer')
             # Re-zoom if necessary
@@ -1097,7 +1099,8 @@ class SmachViewerFrame(wx.Frame):
         event.Skip()
 
     def set_filter(self, filter):
-        self.widget.set_filter(filter)
+        #self.widget.set_filter(filter)
+        pass
 
 def main():
     from argparse import ArgumentParser
