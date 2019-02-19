@@ -40,20 +40,10 @@ import sys
 import os
 import threading
 import pickle
-import pprint
-import copy
-import StringIO
-import colorsys
 import time
 
-import wxversion
-if wxversion.checkInstalled("2.8"):
-    wxversion.select("2.8")
-else:
-    print("wxversion 2.8 is not installed, installed versions are {}".format(wxversion.getInstalled()))
 import wx
 import wx.richtext
-
 import textwrap
 
 TRANSITION_TOPIC = '/smach/transition'
