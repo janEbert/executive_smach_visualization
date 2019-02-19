@@ -555,6 +555,8 @@ class SmachViewerFrame(wx.Frame):
 
         # Create tree view widget
         self.tree = wx.TreeCtrl(nb,-1,style=wx.TR_HAS_BUTTONS)
+        self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnTreeSelectionChanged)
+
         nb.AddPage(graph_view,"Graph View")
         nb.AddPage(self.tree,"Tree View")
 
@@ -748,8 +750,6 @@ class SmachViewerFrame(wx.Frame):
 
         # Left button-up
         if event.LeftDown():
-            # Store this item's url as the selected path
-            self._selected_paths = [item.url]
             # Update the selection dropdown
             self.path_input.SetValue(item.url)
             wx.PostEvent(
@@ -760,6 +760,8 @@ class SmachViewerFrame(wx.Frame):
     def selection_changed(self, event):
         """Event: Selection dropdown changed."""
         path_input_str = self.path_input.GetValue()
+        # Store this item's url as the selected path
+        self._selected_paths = [path_input_str]
 
         # Check the path is non-zero length
         if len(path_input_str) > 0:
@@ -1079,6 +1081,20 @@ class SmachViewerFrame(wx.Frame):
 
     def OnExit(self, event):
         pass
+
+    def OnTreeSelectionChanged(self, event):
+        paths=[]
+        item = event.GetItem()
+        while item.IsOk():
+            paths.append(self.tree.GetItemText(item))
+            item = self.tree.GetItemParent(item)
+
+        # Update the selection dropdown
+        self.path_input.SetValue('/'.join(reversed(paths)))
+        wx.PostEvent(
+            self.path_input.GetEventHandler(),
+            wx.CommandEvent(wx.wxEVT_COMMAND_COMBOBOX_SELECTED, self.path_input.GetId()))
+        event.Skip()
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
