@@ -556,6 +556,7 @@ class SmachViewerFrame(wx.Frame):
         # Create tree view widget
         self.tree = wx.TreeCtrl(nb,-1,style=wx.TR_HAS_BUTTONS)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnTreeSelectionChanged)
+        self._tree_nodes = {}
 
         nb.AddPage(graph_view,"Graph View")
         nb.AddPage(self.tree,"Tree View")
@@ -964,13 +965,11 @@ class SmachViewerFrame(wx.Frame):
                     self._structure_changed = False
 
                 # Update the styles for the graph if there are any updates
-                # for path,tc in containers_to_update.iteritems():
-                #     tc.set_styles(
-                #             self._selected_paths,
-                #             0,self._max_depth,
-                #             self.widget.items_by_url,
-                #             self.widget.subgraph_shapes,
-                #             self._containers)
+                for path, tc in containers_to_update.iteritems():
+                    #tc.set_styles(self._selected_paths, 0, self._max_depth,
+                    #              self.widget.items_by_url, self.widget.subgraph_shapes,
+                    #              self._containers)
+                    self.update_tree_status(tc)
 
                 # Redraw
                 #self.widget.Refresh()
@@ -1006,6 +1005,7 @@ class SmachViewerFrame(wx.Frame):
             container = self.tree.AddRoot(get_label(path))
         else:
             container = self.tree.AppendItem(parent,get_label(path))
+        self._tree_nodes[path] = container
 
         # Add children to tree
         for label in self._containers[path]._children:
@@ -1013,14 +1013,18 @@ class SmachViewerFrame(wx.Frame):
             if child_path in self._containers.keys():
                 self.add_to_tree(child_path, container)
             else:
-                self.tree.AppendItem(container,label)
+                self._tree_nodes[child_path] = self.tree.AppendItem(container,label)
 
-    def append_tree(self, container, parent = None):
-        """Append an item to the tree view."""
-        if not parent:
-            node = self.tree.AddRoot(container._label)
-            for child_label in container._children:
-                self.tree.AppendItem(node,child_label)
+    def update_tree_status(self, tc):
+        for child_label in tc._children:
+            child_path = '/'.join([tc._path, child_label])
+            try:
+                child_item = self._tree_nodes[child_path]
+                self.tree.SetItemBold(child_item, child_label in tc._active_states)
+            except KeyError:  # no sure, why we loose items...
+                pass
+            if child_path in self._containers:
+                self.update_tree_status(self._containers[child_path])
 
     def OnIdle(self, event):
         """Event: On Idle, refresh the display if necessary, then un-set the flag."""
