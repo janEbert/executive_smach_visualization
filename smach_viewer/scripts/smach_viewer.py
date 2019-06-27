@@ -998,6 +998,7 @@ class SmachViewerFrame(wx.Frame):
                 self._tree_nodes = {}
                 for path,tc in self._top_containers.iteritems():
                     self.add_to_tree(path, None)
+                    self.update_tree_status(tc)
                 self.tree.ExpandAll()
 
     def add_to_tree(self, path, parent):
@@ -1006,6 +1007,7 @@ class SmachViewerFrame(wx.Frame):
             container = self.tree.AddRoot(get_label(path))
         else:
             container = self.tree.AppendItem(parent,get_label(path))
+        self._tree_nodes[path] = container
 
         # Add children to tree
         for label in self._containers[path]._children:
@@ -1013,14 +1015,15 @@ class SmachViewerFrame(wx.Frame):
             if child_path in self._containers.keys():
                 self.add_to_tree(child_path, container)
             else:
-                self.tree.AppendItem(container,label)
+                self._tree_nodes[child_path] = self.tree.AppendItem(container,label)
 
-    def append_tree(self, container, parent = None):
-        """Append an item to the tree view."""
-        if not parent:
-            node = self.tree.AddRoot(container._label)
-            for child_label in container._children:
-                self.tree.AppendItem(node,child_label)
+    def update_tree_status(self, tc):
+        for child_label in tc._children:
+            child_path = '/'.join([tc._path, child_label])
+            child_item = self._tree_nodes[child_path]
+            self.tree.SetItemBold(child_item, child_label in tc._active_states)
+            if child_path in self._containers:
+                self.update_tree_status(self._containers[child_path])
 
     def OnIdle(self, event):
         """Event: On Idle, refresh the display if necessary, then un-set the flag."""
