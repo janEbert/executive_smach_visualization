@@ -823,39 +823,39 @@ class SmachViewerFrame(wx.Frame):
         pathsplit = path.split('/')
         parent_path = '/'.join(pathsplit[0:-1])
 
-        rospy.logdebug("RECEIVED: "+path)
+        rospy.logdebug("STRUCTURE MSG: "+path)
         rospy.logdebug("CONTAINERS: "+str(self._containers.keys()))
 
         # Initialize redraw flag
         needs_redraw = False
 
-        if path in self._containers:
-            rospy.logdebug("UPDATING: "+path)
+        with self._update_cond:
+            if path in self._containers:
+                rospy.logdebug("UPDATING: "+path)
 
-            # Update the structure of this known container
-            needs_redraw = self._containers[path].update_structure(msg)
-        else: 
-            rospy.logdebug("CONSTRUCTING: "+path)
+                # Update the structure of this known container
+                needs_redraw = self._containers[path].update_structure(msg)
+            else:
+                rospy.logdebug("CONSTRUCTING: "+path)
 
-            # Create a new container
-            container = ContainerNode(server_name, msg)
-            self._containers[path] = container
+                # Create a new container
+                container = ContainerNode(server_name, msg)
+                self._containers[path] = container
 
-            # Store this as a top container if it has no parent
-            if parent_path == '':
-                self._top_containers[path] = container
+                # Store this as a top container if it has no parent
+                if parent_path == '':
+                    self._top_containers[path] = container
 
-            # Append paths to selector
-            self.path_combo.Append(path)
-            self.path_input.Append(path)
+                # Append paths to selector
+                self.path_combo.Append(path)
+                self.path_input.Append(path)
 
-            # We need to redraw thhe graph if this container's parent is already known
-            if parent_path in self._containers:
-                needs_redraw = True
+                # We need to redraw thhe graph if this container's parent is already known
+                if parent_path in self._containers:
+                    needs_redraw = True
 
-        # Update the graph if necessary
-        if needs_redraw:
-            with self._update_cond:
+            # Update the graph if necessary
+            if needs_redraw:
                 self._structure_changed = True
                 self._needs_zoom = True # TODO: Make it so you can disable this
                 self._update_cond.notify_all()
@@ -876,19 +876,15 @@ class SmachViewerFrame(wx.Frame):
         rospy.logdebug("STATUS MSG: "+path)
 
         # Check if this is a known container
-        if path in self._containers:
-            # Get the container and check if the status update requires regeneration
-            container = self._containers[path]
-            if container.update_status(msg):
-                with self._update_cond:
-                    self._update_cond.notify_all()
-
-            # TODO: Is this necessary?
-            path_input_str = self.path_input.GetValue()
-            if path_input_str == path or get_parent_path(path_input_str) == path:
-                wx.PostEvent(
-                        self.path_input.GetEventHandler(),
-                        wx.CommandEvent(wx.wxEVT_COMMAND_COMBOBOX_SELECTED,self.path_input.GetId()))
+        needs_update = False
+        with self._update_cond:
+            if path in self._containers:
+                # Get the container and check if the status update requires regeneration
+                container = self._containers[path]
+                if container.update_status(msg):
+                    needs_update = True
+            if needs_update:
+                self._update_cond.notify_all()
 
     def _update_graph(self):
         """This thread continuously updates the graph when it changes.
