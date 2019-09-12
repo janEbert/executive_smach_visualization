@@ -990,15 +990,20 @@ class SmachViewerFrame(wx.Frame):
         while self._keep_running and not rospy.is_shutdown():
             with self._update_cond:
                 self._update_cond.wait()
+                print "deleting tree items"
                 self.tree.DeleteAllItems()
                 self._tree_nodes = {}
                 for path,tc in self._top_containers.iteritems():
                     self.add_to_tree(path, None)
+                    print "update tree status: ", path
                     self.update_tree_status(tc)
+                print "ExpandAll()"
                 self.tree.ExpandAll()
+            print "\n"
 
     def add_to_tree(self, path, parent):
         """Add a path to the tree view."""
+        print "adding to tree: ", path
         if parent is None:
             container = self.tree.AddRoot(get_label(path))
         else:
@@ -1084,6 +1089,7 @@ class SmachViewerFrame(wx.Frame):
         pass
 
     def OnTreeSelectionChanged(self, event):
+        print "OnTreeSelectionChanged"
         paths=[]
         item = event.GetItem()
         while item.IsOk():
