@@ -640,8 +640,8 @@ class SmachViewerFrame(wx.Frame):
         self._server_list_thread = threading.Thread(target=self._update_server_list)
         self._server_list_thread.start()
 
-        self._update_graph_thread = threading.Thread(target=self._update_graph)
-        self._update_graph_thread.start()
+        # self._update_graph_thread = threading.Thread(target=self._update_graph)
+        # self._update_graph_thread.start()
         self._update_tree_thread = threading.Thread(target=self._update_tree)
         self._update_tree_thread.start()
 
@@ -652,7 +652,7 @@ class SmachViewerFrame(wx.Frame):
             self._update_cond.notify_all()
 
         self._server_list_thread.join()
-        self._update_graph_thread.join()
+        # self._update_graph_thread.join()
         self._update_tree_thread.join()
         
         event.Skip()
