@@ -998,8 +998,6 @@ class SmachViewerFrame(wx.Frame):
                     modified |= self.add_to_tree(path, None)
                     print "update tree status: ", path
                     self.update_tree_status(tc)
-                print "ExpandAll()"
-                self.tree.ExpandAll()
             print "\n"
 
     def add_to_tree(self, path, parent):
@@ -1016,15 +1014,16 @@ class SmachViewerFrame(wx.Frame):
             modified = True
 
         # Add children to tree
-        for label in self._containers[path]._children:
+        sub = self._containers.get(path, None)
+        children = sub._children if sub is not None else []
+        added_children = False
+        for label in children:
             child_path = '/'.join([path,label])
-            if child_path in self._containers.keys():
-                modified |= self.add_to_tree(child_path, container)
-            elif child_path not in self._tree_nodes:
-                self._tree_nodes[child_path] = self.tree.AppendItem(container,label)
-                modified = True
+            added_children |= self.add_to_tree(child_path, container)
+            if added_children:
+                self.tree.Expand(container)
 
-        return modified
+        return modified | added_children
 
     def update_tree_status(self, tc):
         for child_label in tc._children:
