@@ -463,6 +463,7 @@ class SmachViewerFrame(wx.Frame):
         # Create graph
         self._containers = {}
         self._top_containers = {}
+        self._tree_nodes = {}
         self._update_cond = threading.Condition()
         self._needs_refresh = True
         self.dotstr = ''
@@ -990,28 +991,34 @@ class SmachViewerFrame(wx.Frame):
         while self._keep_running and not rospy.is_shutdown():
             with self._update_cond:
                 self._update_cond.wait()
-                self.tree.DeleteAllItems()
-                self._tree_nodes = {}
+                modified = False
                 for path,tc in self._top_containers.iteritems():
-                    self.add_to_tree(path, None)
+                    modified |= self.add_to_tree(path, None)
                     self.update_tree_status(tc)
                 self.tree.ExpandAll()
 
     def add_to_tree(self, path, parent):
         """Add a path to the tree view."""
-        if parent is None:
-            container = self.tree.AddRoot(get_label(path))
-        else:
-            container = self.tree.AppendItem(parent,get_label(path))
-        self._tree_nodes[path] = container
+        modified = False
+        container = self._tree_nodes.get(path, None)
+        if container is None:
+            if parent is None:
+                container = self.tree.AddRoot(get_label(path))
+            else:
+                container = self.tree.AppendItem(parent,get_label(path))
+            self._tree_nodes[path] = container
+            modified = True
 
         # Add children to tree
         for label in self._containers[path]._children:
             child_path = '/'.join([path,label])
             if child_path in self._containers.keys():
-                self.add_to_tree(child_path, container)
-            else:
+                modified |= self.add_to_tree(child_path, container)
+            elif child_path not in self._tree_nodes:
                 self._tree_nodes[child_path] = self.tree.AppendItem(container,label)
+                modified = True
+
+        return modified
 
     def update_tree_status(self, tc):
         for child_label in tc._children:
