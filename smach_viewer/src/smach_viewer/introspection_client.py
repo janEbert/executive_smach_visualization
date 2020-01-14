@@ -30,6 +30,8 @@
 #
 # Author: Jonathan Bohren 
 
+# TODO still has old mixed garbage from viewer
+
 import rospy
 import rospkg
 
