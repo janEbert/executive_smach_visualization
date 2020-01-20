@@ -642,6 +642,11 @@ class SmachViewerFrame(wx.Frame):
         self._server_list_thread = threading.Thread(target=self._update_server_list)
         self._server_list_thread.start()
 
+        # Wait till we have received the first structure message with a top container
+        with self._update_cond:
+            while not self._top_containers:
+                self._update_cond.wait()
+
         self._update_graph_thread = threading.Thread(target=self._update_graph)
         self._update_graph_thread.start()
         self._update_tree_thread = threading.Thread(target=self._update_tree)
@@ -846,6 +851,10 @@ class SmachViewerFrame(wx.Frame):
                 # Store this as a top container if it has no parent
                 if parent_path == '':
                     self._top_containers[path] = container
+                    # Notify if we have our first top container.
+                    # TODO This is a pretty bad check; what if top containers are removed?
+                    if len(self._top_containers) == 1 and not self._containers:
+                        self._update_cond.notify_all()
 
                 # Append paths to selector
                 self.path_combo.Append(path)
