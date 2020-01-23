@@ -645,7 +645,8 @@ class SmachViewerFrame(wx.Frame):
         # Wait till we have received the first structure message with a top container
         with self._update_cond:
             while not self._top_containers:
-                self._update_cond.wait()
+                if not self._update_cond.wait(5.0):
+                    print('Waiting for a structure message containing a root node...')
 
         self._update_graph_thread = threading.Thread(target=self._update_graph)
         self._update_graph_thread.start()
